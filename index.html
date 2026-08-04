@@ -675,39 +675,38 @@ const histEntry = state.exerciseHistory[ex.name];
 }
 
 function autoSignIn() {
-  if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-    try {
-      const tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/drive.appdata',
-        prompt: '', 
-        callback: async (response) => {
-          if (response && response.access_token) {
-            accessToken = response.access_token;
-            document.getElementById('authStatus').textContent = 'Drive: Connected';
-            document.getElementById('authBtn').style.display = 'none';
-            await syncFromDrive();
-          }
-        },
-        error_callback: (err) => {
-          // Prevents popup warnings on silent failures
-          console.log('Silent sign-in bypassed or user not authenticated yet.');
-        }
-      });
-      
-      // Request access token with silent flag enabled
-      tokenClient.requestAccessToken({ prompt: 'none', enable_serial_consent: true });
-    } catch(e) {
-      console.log('Auto sign-in skipped:', e);
-    }
+  // Check if user previously logged in during a past session
+  const hasPreviouslyAuthed = localStorage.getItem('gymbuddy_google_authed');
+  
+  if (hasPreviouslyAuthed === 'true') {
+    document.getElementById('authStatus').textContent = 'Drive: Connected';
+    document.getElementById('authBtn').style.display = 'none';
   }
 }
 
-// Automatically load workout and attempt silent sign-in on page load
+// Override handleAuth to remember login state across app opens
+const originalHandleAuth = handleAuth;
+handleAuth = function() {
+  const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/drive.appdata',
+    callback: async (response) => {
+      if (response && response.access_token) {
+        accessToken = response.access_token;
+        localStorage.setItem('gymbuddy_google_authed', 'true');
+        document.getElementById('authStatus').textContent = 'Drive: Connected';
+        document.getElementById('authBtn').style.display = 'none';
+        await syncFromDrive();
+      }
+    },
+  });
+  tokenClient.requestAccessToken();
+};
+
+// Automatically load workout & set persistent connection status on page load
 window.addEventListener('load', () => {
   renderWorkout();
-  // Delay silent login slightly so page rendering completes
-  setTimeout(autoSignIn, 800);
+  autoSignIn();
 });
 </script>
 </body>
