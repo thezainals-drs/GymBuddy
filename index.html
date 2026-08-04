@@ -1,8 +1,3 @@
-Here is the updated index.html file with your active Client ID preserved.
-What Changed & Lines Added/Modified
- * Lines 622–639 (Added): Defined the autoSignIn() function. This function sends a silent request to Google OAuth (prompt: 'none') to check if the user has previously authenticated. If authenticated, it seamlessly updates the status to Drive: Connected and syncs their data.
- * Lines 641–645 (Modified): Replaced the lone renderWorkout(); call at the bottom with a window.addEventListener('load') listener. This loads the UI and triggers autoSignIn() after a 500ms delay to give Google's GSI library time to initialize.
-Full Updated Code
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -707,4 +702,3 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
-
