@@ -676,28 +676,38 @@ const histEntry = state.exerciseHistory[ex.name];
 
 function autoSignIn() {
   if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-    const tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/drive.appdata',
-      prompt: '', 
-      callback: async (response) => {
-        if (response.access_token) {
-          accessToken = response.access_token;
-          document.getElementById('authStatus').textContent = 'Drive: Connected';
-          document.getElementById('authBtn').style.display = 'none';
-          await syncFromDrive();
+    try {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/drive.appdata',
+        prompt: '', 
+        callback: async (response) => {
+          if (response && response.access_token) {
+            accessToken = response.access_token;
+            document.getElementById('authStatus').textContent = 'Drive: Connected';
+            document.getElementById('authBtn').style.display = 'none';
+            await syncFromDrive();
+          }
+        },
+        error_callback: (err) => {
+          // Prevents popup warnings on silent failures
+          console.log('Silent sign-in bypassed or user not authenticated yet.');
         }
-      },
-    });
-    
-    tokenClient.requestAccessToken({ prompt: 'none' });
+      });
+      
+      // Request access token with silent flag enabled
+      tokenClient.requestAccessToken({ prompt: 'none', enable_serial_consent: true });
+    } catch(e) {
+      console.log('Auto sign-in skipped:', e);
+    }
   }
 }
 
 // Automatically load workout and attempt silent sign-in on page load
 window.addEventListener('load', () => {
   renderWorkout();
-  setTimeout(autoSignIn, 500);
+  // Delay silent login slightly so page rendering completes
+  setTimeout(autoSignIn, 800);
 });
 </script>
 </body>
