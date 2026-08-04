@@ -74,6 +74,36 @@
    color: #555;
  }
 
+ .sync-status {
+   font-size: 11px;
+   font-weight: 600;
+   color: #999;
+   text-align: center;
+   margin-bottom: 14px;
+   letter-spacing: 0.03em;
+ }
+
+ .sync-status.offline { color: #b8860b; }
+ .sync-status.syncing { color: #1a56a0; }
+ .sync-status.synced { color: #1a7f3c; }
+
+ .log-workout-wrap {
+   padding: 12px 14px 14px 14px;
+   display: flex;
+   justify-content: center;
+   background: #fafafa;
+   border-top: 1px solid #ebebeb;
+ }
+
+ .btn-log {
+   background: #1a7f3c;
+   border-color: #1a7f3c;
+   color: #fff;
+   width: 100%;
+   padding: 11px 16px;
+   font-size: 12px;
+ }
+
  h1 {
    font-size: 18px;
    font-weight: 800;
@@ -361,6 +391,7 @@
   <span class="auth-status" id="authStatus">Drive: Disconnected</span>
   <button class="btn btn-primary" id="authBtn" onclick="handleAuth()">Sign in with Google</button>
 </div>
+<div class="sync-status" id="syncStatus">Saved locally</div>
 
 <h1>High-Volume Upper-Chest &amp; Frame</h1>
 <p class="subtitle">Hypertrophy Split — Tap each circle per set</p>
@@ -446,8 +477,14 @@ let state = {
   userName: '',
   sets: {},
   currentWeights: {},
-  exerciseHistory: {}
+  exerciseHistory: {},   // quick "last weight used" lookup per exercise, for input placeholders
+  workoutLogs: [],       // full dated history — one entry per "Log Workout" press
+  updatedAt: null,       // ISO timestamp of last local change, used to resolve sync conflicts
+  pendingSync: false     // true whenever local changes haven't been pushed to Drive yet
 };
+
+let isOnline = navigator.onLine;
+let isSyncing = false;
 
 let accessToken = null;
 let driveFileId = null;
@@ -476,8 +513,7 @@ function promptUserName() {
   const name = prompt("What's your name?", state.userName || '');
   if (name !== null) {
     state.userName = name.trim();
-    saveLocalState();
-    saveToDrive();
+    touchState();
     updateGreeting();
   }
 }
@@ -498,6 +534,7 @@ function handleAuth() {
         localStorage.setItem('gymbuddy_google_authed', 'true');
         document.getElementById('authStatus').textContent = 'Drive: Connected';
         document.getElementById('authBtn').style.display = 'none';
+        updateSyncStatusUI();
         await syncFromDrive();
       }
     },
@@ -505,8 +542,13 @@ function handleAuth() {
   tokenClient.requestAccessToken();
 }
 
+// Pulls the remote copy and keeps whichever version (local vs. remote) has the
+// newer `updatedAt` — protects against overwriting newer local edits made while
+// offline, or newer edits made on another device/browser.
 async function syncFromDrive() {
-  if (!accessToken) return;
+  if (!accessToken || !isOnline) { updateSyncStatusUI(); return; }
+  isSyncing = true;
+  updateSyncStatusUI();
   try {
     const res = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder', {
       headers: { Authorization: `Bearer ${accessToken}` }
@@ -519,31 +561,107 @@ async function syncFromDrive() {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
       const driveState = await fileRes.json();
-      state = { ...state, ...driveState };
-      saveLocalState();
-      updateGreeting();
-      renderWorkout();
+      const remoteIsNewer = driveState.updatedAt && (!state.updatedAt || driveState.updatedAt > state.updatedAt);
+      if (remoteIsNewer) {
+        state = { ...state, ...driveState, pendingSync: false };
+        saveLocalState();
+        updateGreeting();
+        renderWorkout();
+      } else if (state.pendingSync) {
+        // Local has newer (possibly offline-made) changes — push them up instead.
+        await saveToDrive();
+      }
     } else {
       await saveToDrive();
     }
-  } catch(e) { console.error('Drive Sync Error', e); }
+  } catch(e) {
+    console.error('Drive Sync Error', e);
+  } finally {
+    isSyncing = false;
+    updateSyncStatusUI();
+  }
 }
 
 async function saveToDrive() {
-  if (!accessToken) return;
+  if (!accessToken || !isOnline) return;
   const metadata = { name: 'gymbuddy_data.json', parents: ['appDataFolder'] };
+  const payload = { ...state, pendingSync: false };
   const form = new FormData();
   form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-  form.append('file', new Blob([JSON.stringify(state)], { type: 'application/json' }));
+  form.append('file', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
   let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
   let method = 'POST';
   if (driveFileId) {
     url = `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=multipart`;
     method = 'PATCH';
   }
-  const res = await fetch(url, { method, headers: { Authorization: `Bearer ${accessToken}` }, body: form });
-  const data = await res.json();
-  if (data.id) driveFileId = data.id;
+  try {
+    const res = await fetch(url, { method, headers: { Authorization: `Bearer ${accessToken}` }, body: form });
+    const data = await res.json();
+    if (data.id) driveFileId = data.id;
+    state.pendingSync = false;
+    saveLocalState();
+  } catch (e) {
+    console.error('Drive Save Error — will retry next time we\'re online', e);
+    // Leave pendingSync true so we retry on the next connectivity change.
+  }
+}
+
+// ---- Sync status UI ----
+function updateSyncStatusUI() {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  if (!accessToken) {
+    el.textContent = 'Saved locally (sign in to back up to Drive)';
+    el.className = 'sync-status';
+  } else if (isSyncing) {
+    el.textContent = 'Syncing…';
+    el.className = 'sync-status syncing';
+  } else if (!isOnline) {
+    el.textContent = 'Offline — changes saved locally, will sync when back online';
+    el.className = 'sync-status offline';
+  } else if (state.pendingSync) {
+    el.textContent = 'Waiting to sync…';
+    el.className = 'sync-status offline';
+  } else {
+    el.textContent = 'Synced';
+    el.className = 'sync-status synced';
+  }
+}
+
+// Call this after every local mutation. Saves locally (always works, offline or not)
+// and opportunistically pushes to Drive if we're online and signed in.
+function touchState() {
+  state.updatedAt = new Date().toISOString();
+  state.pendingSync = true;
+  saveLocalState();
+  updateSyncStatusUI();
+  attemptSync();
+}
+
+async function attemptSync() {
+  if (!accessToken || !isOnline || isSyncing) { updateSyncStatusUI(); return; }
+  isSyncing = true;
+  updateSyncStatusUI();
+  await saveToDrive();
+  isSyncing = false;
+  updateSyncStatusUI();
+}
+
+// ---- Browser connectivity (works offline via localStorage regardless) ----
+function initNetworkListener() {
+  isOnline = navigator.onLine;
+  updateSyncStatusUI();
+  window.addEventListener('online', () => {
+    const cameOnline = !isOnline;
+    isOnline = true;
+    updateSyncStatusUI();
+    if (cameOnline) attemptSync();
+  });
+  window.addEventListener('offline', () => {
+    isOnline = false;
+    updateSyncStatusUI();
+  });
 }
 
 function updateProgress() {
@@ -557,8 +675,7 @@ function toggleSet(key, dot) {
   state.sets[key] = !state.sets[key];
   dot.classList.toggle('checked', state.sets[key]);
   dot.textContent = state.sets[key] ? '✓' : '';
-  saveLocalState();
-  saveToDrive();
+  touchState();
   updateProgress();
 }
 
@@ -568,24 +685,81 @@ function saveWeight(exName, wKey, val) {
   if (val.trim() !== '') {
     state.exerciseHistory[exName] = { weight: val, updatedAt: today };
   }
-  saveLocalState();
-  saveToDrive();
+  touchState();
 }
 
+// Called by the "Log Workout" button on a given day. Records a permanent, dated
+// entry to state.workoutLogs (never overwritten), updates the quick "last weight"
+// lookup used for input placeholders, then clears that day's checkmarks and
+// weight fields so it's ready for the next time this day comes around.
+function logWorkout(di) {
+  const day = days[di];
+  if (!day || day.rest) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const entries = [];
+  let anySetChecked = false;
+
+  day.exercises.forEach((ex, ei) => {
+    const wKey = `w-${di}-${ei}`;
+    const inputEl = document.getElementById(`input-${wKey}`);
+    const weight = inputEl ? inputEl.value : (state.currentWeights[wKey] || '');
+
+    let setsCompleted = 0;
+    for (let s = 0; s < ex.sets; s++) {
+      if (state.sets[`s-${di}-${ei}-${s}`]) setsCompleted++;
+    }
+    if (setsCompleted > 0) anySetChecked = true;
+
+    entries.push({ name: ex.name, weight, setsCompleted, totalSets: ex.sets });
+
+    if (weight && weight.trim() !== '') {
+      state.exerciseHistory[ex.name] = { weight, updatedAt: today };
+    }
+  });
+
+  if (!anySetChecked) {
+    const proceed = confirm("No sets are checked off for this day yet. Log it anyway?");
+    if (!proceed) return;
+  }
+
+  state.workoutLogs.unshift({
+    id: `${today}-${di}-${Date.now()}`,
+    date: today,
+    dayLabel: day.label,
+    dayTitle: day.title,
+    entries
+  });
+
+  // Clear this day's checkmarks and weight fields only — other days are untouched.
+  day.exercises.forEach((ex, ei) => {
+    for (let s = 0; s < ex.sets; s++) {
+      delete state.sets[`s-${di}-${ei}-${s}`];
+    }
+    delete state.currentWeights[`w-${di}-${ei}`];
+  });
+
+  touchState();
+  renderWorkout();
+  alert(`${day.label} logged for ${today}. Nice work!`);
+}
+
+// Exports every logged workout session (one row per exercise per session),
+// not just the latest weight — so you get real progression over time.
 function exportToCSV() {
-  const historyKeys = Object.keys(state.exerciseHistory);
-  if (historyKeys.length === 0) {
-    alert("No logged exercise history found to export.");
+  if (!state.workoutLogs || state.workoutLogs.length === 0) {
+    alert("No logged workouts yet. Tap 'Log Workout' after a session to start building your history.");
     return;
   }
-  let csvContent = "data:text/csv;charset=utf-8,Exercise Name,Last Weight Used,Last Updated Date\n";
-  historyKeys.forEach((exName) => {
-    const entry = state.exerciseHistory[exName];
-    const weight = typeof entry === 'object' ? entry.weight : entry;
-    const date = typeof entry === 'object' && entry.updatedAt ? entry.updatedAt : 'N/A';
-    const cleanName = `"${exName.replace(/"/g, '""')}"`;
-    const cleanWeight = `"${weight.replace(/"/g, '""')}"`;
-    csvContent += `${cleanName},${cleanWeight},${date}\n`;
+  let csvContent = "data:text/csv;charset=utf-8,Date,Day,Exercise,Weight,Sets Completed,Total Sets\n";
+  // workoutLogs is newest-first; flip to chronological order for the export
+  [...state.workoutLogs].reverse().forEach((log) => {
+    log.entries.forEach((entry) => {
+      const cleanDay = `"${(log.dayLabel + ' — ' + log.dayTitle).replace(/"/g, '""')}"`;
+      const cleanName = `"${entry.name.replace(/"/g, '""')}"`;
+      const cleanWeight = `"${(entry.weight || '').replace(/"/g, '""')}"`;
+      csvContent += `${log.date},${cleanDay},${cleanName},${cleanWeight},${entry.setsCompleted},${entry.totalSets}\n`;
+    });
   });
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
@@ -600,8 +774,7 @@ function resetAll() {
   if (!confirm('Reset current session sets? (Historical weights will be preserved)')) return;
   state.sets = {};
   state.currentWeights = {};
-  saveLocalState();
-  saveToDrive();
+  touchState();
   renderWorkout();
 }
 
@@ -611,6 +784,7 @@ function autoSignIn() {
     document.getElementById('authStatus').textContent = 'Drive: Connected';
     document.getElementById('authBtn').style.display = 'none';
   }
+  updateSyncStatusUI();
 }
 
 function renderWorkout() {
@@ -693,6 +867,7 @@ function renderWorkout() {
 
         const inp = document.createElement('input');
         inp.className = 'weight-input';
+        inp.id = `input-${wKey}`;
         inp.type = 'text';
         inp.inputMode = 'text';
         inp.autocomplete = 'off';
@@ -715,6 +890,15 @@ function renderWorkout() {
         tr.appendChild(tdSets);
         tbody.appendChild(tr);
       });
+
+      const logWrap = document.createElement('div');
+      logWrap.className = 'log-workout-wrap';
+      const logBtn = document.createElement('button');
+      logBtn.className = 'btn btn-log';
+      logBtn.textContent = '✓ Log Workout';
+      logBtn.onclick = () => logWorkout(di);
+      logWrap.appendChild(logBtn);
+      content.appendChild(logWrap);
     }
 
     block.appendChild(content);
@@ -727,6 +911,7 @@ function renderWorkout() {
 
 window.addEventListener('load', () => {
   renderWorkout();
+  initNetworkListener();
   autoSignIn();
 });
 </script>
