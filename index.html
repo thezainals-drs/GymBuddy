@@ -1,0 +1,610 @@
+Here is the updated, complete index.html file for Option 1. It keeps all the fast Google Drive appDataFolder sync logic, but adds an "Export History (.csv)" button next to the reset button.
+When clicked, it automatically parses your exercise history into a structured CSV file (with columns for Exercise Name, Last Weight Recorded, and Last Updated Date) and downloads it straight to your device.
+📄 Complete index.html Code
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<!-- iOS PWA Meta Tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gym Tracker">
+
+<title>Workout Tracker</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+ * { box-sizing: border-box; margin: 0; padding: 0; }
+
+ body {
+   background: #f2f2f2;
+   color: #111;
+   font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+   font-size: 15px;
+   padding: 16px;
+   min-height: 100vh;
+ }
+
+ .auth-bar {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   margin-bottom: 12px;
+   background: #fff;
+   padding: 10px 14px;
+   border-radius: 8px;
+   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+ }
+
+ .auth-status {
+   font-size: 12px;
+   font-weight: 600;
+   color: #555;
+ }
+
+ h1 {
+   font-size: 18px;
+   font-weight: 800;
+   letter-spacing: 0.06em;
+   text-transform: uppercase;
+   color: #111;
+   margin-bottom: 3px;
+ }
+
+ .subtitle {
+   font-size: 12px;
+   color: #555;
+   letter-spacing: 0.04em;
+   text-transform: uppercase;
+   margin-bottom: 16px;
+   font-weight: 600;
+ }
+
+ .progress-bar-wrap {
+   height: 5px;
+   background: #ddd;
+   margin-bottom: 18px;
+   border-radius: 3px;
+   overflow: hidden;
+ }
+
+ .progress-bar {
+   height: 100%;
+   background: #1a7f3c;
+   border-radius: 3px;
+   transition: width 0.3s;
+   width: 0%;
+ }
+
+ .day-block {
+   margin-bottom: 16px;
+   border: 1.5px solid #ddd;
+   border-radius: 10px;
+   overflow: hidden;
+   background: #fff;
+   box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+ }
+
+ .day-header {
+   background: #1c1c1e;
+   padding: 11px 14px;
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   cursor: pointer;
+   user-select: none;
+ }
+
+ .day-label {
+   font-size: 11px;
+   font-weight: 700;
+   letter-spacing: 0.12em;
+   text-transform: uppercase;
+   color: #aaa;
+ }
+
+ .day-title {
+   font-size: 13px;
+   font-weight: 700;
+   color: #fff;
+   flex: 1;
+ }
+
+ .chevron {
+   font-size: 10px;
+   color: #888;
+   transition: transform 0.2s;
+ }
+
+ .day-header.collapsed .chevron { transform: rotate(-90deg); }
+
+ .day-content { display: block; }
+ .day-content.hidden { display: none; }
+
+ table {
+   width: 100%;
+   border-collapse: collapse;
+ }
+
+ thead tr {
+   background: #f7f7f7;
+   border-bottom: 1.5px solid #e0e0e0;
+ }
+
+ thead th {
+   padding: 7px 10px;
+   font-size: 11px;
+   font-weight: 700;
+   letter-spacing: 0.07em;
+   text-transform: uppercase;
+   color: #666;
+   text-align: left;
+ }
+
+ thead th.center { text-align: center; }
+
+ tbody tr {
+   border-bottom: 1px solid #ebebeb;
+   transition: background 0.12s;
+ }
+
+ tbody tr:last-child { border-bottom: none; }
+ tbody tr:hover { background: #f9f9f9; }
+
+ td {
+   padding: 10px 10px;
+   vertical-align: middle;
+ }
+
+ .intensity { font-size: 18px; line-height: 1; }
+
+ .exercise-name {
+   font-size: 14px;
+   font-weight: 700;
+   color: #111;
+ }
+
+ .exercise-note {
+   font-size: 11px;
+   color: #777;
+   margin-top: 2px;
+   line-height: 1.4;
+   font-weight: 500;
+ }
+
+ .sets-reps {
+   font-size: 13px;
+   font-weight: 700;
+   color: #222;
+   white-space: nowrap;
+   text-align: center;
+ }
+
+ .weight-cell { text-align: center; }
+
+ .weight-input {
+   background: #f0f0f0;
+   border: 1.5px solid #ccc;
+   border-radius: 6px;
+   color: #111;
+   font-size: 13px;
+   font-weight: 700;
+   width: 82px;
+   padding: 6px 6px;
+   text-align: center;
+   outline: none;
+   transition: border-color 0.15s, background 0.15s;
+   -webkit-appearance: none;
+ }
+
+ .weight-input:focus {
+   border-color: #1a7f3c;
+   background: #fff;
+ }
+
+ .weight-input::placeholder { color: #aaa; font-weight: 400; font-size: 11px; }
+
+ .sets-cell { text-align: center; }
+
+ .set-dots {
+   display: flex;
+   flex-direction: column;
+   gap: 5px;
+   align-items: center;
+ }
+
+ .set-dot {
+   width: 26px;
+   height: 26px;
+   border-radius: 50%;
+   border: 2px solid #ccc;
+   background: #fff;
+   cursor: pointer;
+   font-size: 13px;
+   font-weight: 700;
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   color: transparent;
+   transition: all 0.15s;
+   flex-shrink: 0;
+ }
+
+ .set-dot.checked {
+   background: #1a7f3c;
+   border-color: #1a7f3c;
+   color: #fff;
+ }
+
+ .rest-row td {
+   padding: 16px 10px;
+   text-align: center;
+   font-size: 12px;
+   font-weight: 700;
+   letter-spacing: 0.1em;
+   text-transform: uppercase;
+   color: #aaa;
+   background: #fafafa;
+ }
+
+ .action-bar {
+   margin-top: 20px;
+   display: flex;
+   justify-content: center;
+   gap: 10px;
+ }
+
+ .btn {
+   background: #fff;
+   border: 1.5px solid #ccc;
+   color: #444;
+   border-radius: 7px;
+   padding: 9px 16px;
+   font-size: 12px;
+   font-weight: 700;
+   letter-spacing: 0.05em;
+   cursor: pointer;
+   transition: all 0.15s;
+ }
+
+ .btn:hover { border-color: #888; color: #111; }
+ .btn-primary { background: #1c1c1e; color: #fff; border-color: #1c1c1e; }
+ .btn-primary:hover { background: #333; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="auth-bar">
+  <span class="auth-status" id="authStatus">Drive: Disconnected</span>
+  <button class="btn btn-primary" id="authBtn" onclick="handleAuth()">Sign in with Google</button>
+</div>
+
+<h1>High-Volume Upper-Chest &amp; Frame</h1>
+<p class="subtitle">Hypertrophy Split — Tap each circle per set</p>
+
+<div class="progress-bar-wrap">
+ <div class="progress-bar" id="progressBar"></div>
+</div>
+
+<div id="workout"></div>
+
+<div class="action-bar">
+ <button class="btn" onclick="exportToCSV()">Export History (.csv)</button>
+ <button class="btn" onclick="resetAll()">Reset Session</button>
+</div>
+
+<script>
+// REPLACE WITH YOUR GOOGLE OAUTH CLIENT ID FROM GOOGLE CLOUD CONSOLE
+const CLIENT_ID = '845411227594-7vf5h7g7pjcn0rm12art72jr0st5vpjg.apps.googleusercontent.com';
+
+const days = [
+ {
+ label: "Day 1",
+ title: "Push — Pectoral Primary, Deltoids & Triceps",
+ exercises: [
+ { intensity: "🟡", name: "Incline Dumbbell Bench Press", sets: 4, reps: "8–10", note: "30°–45° incline, upper chest" },
+ { intensity: "🔴", name: "Flat Barbell Bench Press", sets: 3, reps: "6–8", note: "Mid-chest thickness" },
+ { intensity: "🟢", name: "Incline Dumbbell Flyes", sets: 3, reps: "12", note: "Deep stretch, upper chest isolation" },
+ { intensity: "🟡", name: "Seated Dumbbell Shoulder Press", sets: 3, reps: "8–10", note: "Overhead pressing strength" },
+ { intensity: "🟢", name: "Overhead Dumbbell Tricep Extension", sets: 3, reps: "12", note: "" },
+ ]
+ },
+ {
+ label: "Day 2",
+ title: "Pull — Lats, Rhomboids & Posterior Delts",
+ exercises: [
+ { intensity: "🔴", name: "Barbell Conventional Deadlifts", sets: 3, reps: "5", note: "Posterior chain & systemic load" },
+ { intensity: "🟡", name: "Wide-Grip Lat Pulldowns", sets: 4, reps: "8–10", note: "Upper torso width" },
+ { intensity: "🟡", name: "Bent-Over Barbell Rows", sets: 3, reps: "8–10", note: "Underhand grip, mid-back thickness" },
+ { intensity: "🟢", name: "Dumbbell Shrugs", sets: 3, reps: "12–15", note: "2-second squeeze at top" },
+ { intensity: "🟢", name: "Incline Dumbbell Bicep Curls", sets: 3, reps: "10–12", note: "" },
+ ]
+ },
+ {
+ label: "Day 3",
+ title: "Active Recovery / Rest",
+ rest: true
+ },
+ {
+ label: "Day 4",
+ title: "Lower Body — Hamstrings, Glutes & Calves",
+ exercises: [
+ { intensity: "🔴", name: "Barbell Hip Thrusts", sets: 4, reps: "8–10", note: "Heavy posterior loading, vertical shins, zero knee pain" },
+ { intensity: "🟡", name: "Romanian Deadlifts (RDLs)", sets: 3, reps: "10", note: "Hip hinge, hamstring & lower back density" },
+ { intensity: "🟢", name: "Seated Straight-Leg Raises", sets: 3, reps: "15 per leg", note: "Straight-leg quad isolation, zero joint compression" },
+ { intensity: "🟢", name: "Isometric Wall Sits", sets: 3, reps: "30–45 sec hold", note: "Shallow 45° bend, static hold" },
+ { intensity: "🟢", name: "Standing Calf Raises", sets: 4, reps: "15", note: "" },
+ ]
+ },
+ {
+ label: "Day 5",
+ title: "Upper Body Conditioning & Pectoral Definition",
+ exercises: [
+ { intensity: "🟢", name: "Decline Push-Ups", sets: 3, reps: "Failure", note: "Feet elevated, strict upper pec focus" },
+ { intensity: "🟡", name: "Chest Dips", sets: 3, reps: "8–12", note: "Lean forward, lower pec border" },
+ { intensity: "🟢", name: "Dumbbell Lateral Raises", sets: 4, reps: "15", note: "Medial delt, lateral shoulder width" },
+ { intensity: "🟢", name: "Seated Cable / Machine Rows", sets: 3, reps: "12", note: "" },
+ { intensity: "🟢", name: "Rear Delt Flyes", sets: 3, reps: "15", note: "Posterior delt, posture correction" },
+ ]
+ }
+];
+
+let state = {
+  sets: {},
+  currentWeights: {},
+  exerciseHistory: {} // Forward compatible: { [exerciseName]: { weight: "20 kg", updatedAt: "2026-08-04" } }
+};
+
+let accessToken = null;
+let driveFileId = null;
+
+function saveLocalState() {
+  try { localStorage.setItem('gymState_v2', JSON.stringify(state)); } catch(e) {}
+}
+
+function loadLocalState() {
+  try {
+    const s = localStorage.getItem('gymState_v2');
+    if (s) state = JSON.parse(s);
+  } catch(e) {}
+}
+
+// Google Auth & Drive Sync
+function handleAuth() {
+  const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/drive.appdata',
+    callback: async (response) => {
+      if (response.access_token) {
+        accessToken = response.access_token;
+        document.getElementById('authStatus').textContent = 'Drive: Connected';
+        document.getElementById('authBtn').style.display = 'none';
+        await syncFromDrive();
+      }
+    },
+  });
+  tokenClient.requestAccessToken();
+}
+
+async function syncFromDrive() {
+  if (!accessToken) return;
+  try {
+    const res = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    const data = await res.json();
+    const file = data.files.find(f => f.name === 'gym_data.json');
+
+    if (file) {
+      driveFileId = file.id;
+      const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const driveState = await fileRes.json();
+      state = { ...state, ...driveState };
+      saveLocalState();
+      renderWorkout();
+    } else {
+      await saveToDrive();
+    }
+  } catch(e) { console.error('Drive Sync Error', e); }
+}
+
+async function saveToDrive() {
+  if (!accessToken) return;
+  const metadata = { name: 'gym_data.json', parents: ['appDataFolder'] };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  form.append('file', new Blob([JSON.stringify(state)], { type: 'application/json' }));
+
+  let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+  let method = 'POST';
+
+  if (driveFileId) {
+    url = `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=multipart`;
+    method = 'PATCH';
+  }
+
+  const res = await fetch(url, { method, headers: { Authorization: `Bearer ${accessToken}` }, body: form });
+  const data = await res.json();
+  if (data.id) driveFileId = data.id;
+}
+
+function updateProgress() {
+ const dots = document.querySelectorAll('.set-dot');
+ const checked = document.querySelectorAll('.set-dot.checked');
+ const pct = dots.length ? (checked.length / dots.length) * 100 : 0;
+ document.getElementById('progressBar').style.width = pct + '%';
+}
+
+function toggleSet(key, dot) {
+ state.sets[key] = !state.sets[key];
+ dot.classList.toggle('checked', state.sets[key]);
+ dot.textContent = state.sets[key] ? '✓' : '';
+ saveLocalState();
+ saveToDrive();
+ updateProgress();
+}
+
+function saveWeight(exName, wKey, val) {
+ state.currentWeights[wKey] = val;
+ const today = new Date().toISOString().split('T')[0];
+ 
+ if (val.trim() !== '') {
+   // Support both legacy string format and new object format
+   state.exerciseHistory[exName] = {
+     weight: val,
+     updatedAt: today
+   };
+ }
+ saveLocalState();
+ saveToDrive();
+}
+
+function exportToCSV() {
+  const historyKeys = Object.keys(state.exerciseHistory);
+  if (historyKeys.length === 0) {
+    alert("No logged exercise history found to export.");
+    return;
+  }
+
+  let csvContent = "data:text/csv;charset=utf-8,Exercise Name,Last Weight Used,Last Updated Date\n";
+
+  historyKeys.forEach((exName) => {
+    const entry = state.exerciseHistory[exName];
+    const weight = typeof entry === 'object' ? entry.weight : entry;
+    const date = typeof entry === 'object' && entry.updatedAt ? entry.updatedAt : 'N/A';
+    
+    // Clean string formatting for CSV
+    const cleanName = `"${exName.replace(/"/g, '""')}"`;
+    const cleanWeight = `"${weight.replace(/"/g, '""')}"`;
+    
+    csvContent += `${cleanName},${cleanWeight},${date}\n`;
+  });
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `gym_tracker_history_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function resetAll() {
+ if (!confirm('Reset current session sets? (Historical weights will be preserved)')) return;
+ state.sets = {};
+ state.currentWeights = {};
+ saveLocalState();
+ saveToDrive();
+ renderWorkout();
+}
+
+function renderWorkout() {
+ loadLocalState();
+ const wrap = document.getElementById('workout');
+ wrap.innerHTML = '';
+
+ days.forEach((day, di) => {
+   const block = document.createElement('div');
+   block.className = 'day-block';
+
+   const header = document.createElement('div');
+   header.className = 'day-header';
+   header.innerHTML = `<span class="day-label">${day.label}</span><span class="day-title">${day.title}</span><span class="chevron">▼</span>`;
+   header.onclick = () => {
+     const content = block.querySelector('.day-content');
+     const collapsed = content.classList.toggle('hidden');
+     header.classList.toggle('collapsed', collapsed);
+   };
+   block.appendChild(header);
+
+   const content = document.createElement('div');
+   content.className = 'day-content';
+
+   if (day.rest) {
+     const table = document.createElement('table');
+     table.innerHTML = `<tbody><tr class="rest-row"><td colspan="5">Rest & Recover</td></tr></tbody>`;
+     content.appendChild(table);
+   } else {
+     const table = document.createElement('table');
+     table.innerHTML = `
+     <thead>
+       <tr>
+         <th style="width:30px"></th>
+         <th>Exercise</th>
+         <th class="center">Reps</th>
+         <th class="center">kg / lbs</th>
+         <th class="center">Sets</th>
+       </tr>
+     </thead>
+     <tbody id="tbody-${di}"></tbody>
+     `;
+     content.appendChild(table);
+
+     const tbody = table.querySelector(`#tbody-${di}`);
+     day.exercises.forEach((ex, ei) => {
+       const wKey = `w-${di}-${ei}`;
+       
+       // Pre-fill from current session value OR fall back to last recorded weight for this exercise
+       const histEntry = state.exerciseHistory[ex.name];
+       const lastWeight = typeof histEntry === 'object' ? histEntry.weight : (histEntry || '');
+       const currentWeight = state.currentWeights[wKey] !== undefined ? state.currentWeights[wKey] : lastWeight;
+
+       let dotsHtml = '<div class="set-dots">';
+       for (let s = 0; s < ex.sets; s++) {
+         const sKey = `s-${di}-${ei}-${s}`;
+         const done = state.sets[sKey] || false;
+         dotsHtml += `<button class="set-dot ${done ? 'checked' : ''}" onclick="toggleSet('${sKey}', this)">${done ? '✓' : ''}</button>`;
+       }
+       dotsHtml += '</div>';
+
+       const tr = document.createElement('tr');
+
+       const tdDot = document.createElement('td');
+       tdDot.className = 'intensity';
+       tdDot.textContent = ex.intensity;
+
+       const tdEx = document.createElement('td');
+       tdEx.innerHTML = `<div class="exercise-name">${ex.name}</div>${ex.note ? `<div class="exercise-note">${ex.note}</div>` : ''}`;
+
+       const tdReps = document.createElement('td');
+       tdReps.className = 'sets-reps';
+       tdReps.textContent = ex.reps;
+
+       const inp = document.createElement('input');
+       inp.className = 'weight-input';
+       inp.type = 'text';
+       inp.placeholder = lastWeight ? `Last: ${lastWeight}` : 'e.g. 20/40';
+       inp.value = currentWeight;
+       inp.addEventListener('change', () => saveWeight(ex.name, wKey, inp.value));
+
+       const tdW = document.createElement('td');
+       tdW.className = 'weight-cell';
+       tdW.appendChild(inp);
+
+       const tdSets = document.createElement('td');
+       tdSets.className = 'sets-cell';
+       tdSets.innerHTML = dotsHtml;
+
+       tr.appendChild(tdDot);
+       tr.appendChild(tdEx);
+       tr.appendChild(tdReps);
+       tr.appendChild(tdW);
+       tr.appendChild(tdSets);
+       tbody.appendChild(tr);
+     });
+   }
+
+   block.appendChild(content);
+   wrap.appendChild(block);
+ });
+
+ updateProgress();
+}
+
+renderWorkout();
+</script>
+</body>
+</html>
+
