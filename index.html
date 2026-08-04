@@ -1,3 +1,8 @@
+Here is the updated index.html file with your active Client ID preserved.
+What Changed & Lines Added/Modified
+ * Lines 622–639 (Added): Defined the autoSignIn() function. This function sends a silent request to Google OAuth (prompt: 'none') to check if the user has previously authenticated. If authenticated, it seamlessly updates the status to Drive: Connected and syncs their data.
+ * Lines 641–645 (Modified): Replaced the lone renderWorkout(); call at the bottom with a window.addEventListener('load') listener. This loads the UI and triggers autoSignIn() after a 500ms delay to give Google's GSI library time to initialize.
+Full Updated Code
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,140 +19,140 @@
  * { box-sizing: border-box; margin: 0; padding: 0; }
 
  body {
-   background: #f2f2f2;
-   color: #111;
-   font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-   font-size: 15px;
-   padding: 16px;
-   min-height: 100vh;
+ background: #f2f2f2;
+ color: #111;
+ font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+ font-size: 15px;
+ padding: 16px;
+ min-height: 100vh;
  }
 
  .brand-header {
-   display: flex;
-   justify-content: space-between;
-   align-items: center;
-   margin-bottom: 8px;
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ margin-bottom: 8px;
  }
 
  .brand-title {
-   font-size: 20px;
-   font-weight: 900;
-   letter-spacing: -0.02em;
-   color: #1c1c1e;
+ font-size: 20px;
+ font-weight: 900;
+ letter-spacing: -0.02em;
+ color: #1c1c1e;
  }
 
  .user-greeting {
-   background: #1c1c1e;
-   color: #fff;
-   padding: 12px 14px;
-   border-radius: 8px;
-   font-size: 13px;
-   font-weight: 600;
-   margin-bottom: 12px;
-   display: flex;
-   justify-content: space-between;
-   align-items: center;
-   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+ background: #1c1c1e;
+ color: #fff;
+ padding: 12px 14px;
+ border-radius: 8px;
+ font-size: 13px;
+ font-weight: 600;
+ margin-bottom: 12px;
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ box-shadow: 0 2px 5px rgba(0,0,0,0.1);
  }
 
  .edit-name-btn {
-   background: transparent;
-   border: none;
-   color: #aaa;
-   font-size: 11px;
-   text-decoration: underline;
-   cursor: pointer;
+ background: transparent;
+ border: none;
+ color: #aaa;
+ font-size: 11px;
+ text-decoration: underline;
+ cursor: pointer;
  }
 
  .auth-bar {
-   display: flex;
-   justify-content: space-between;
-   align-items: center;
-   margin-bottom: 16px;
-   background: #fff;
-   padding: 10px 14px;
-   border-radius: 8px;
-   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ margin-bottom: 16px;
+ background: #fff;
+ padding: 10px 14px;
+ border-radius: 8px;
+ box-shadow: 0 1px 3px rgba(0,0,0,0.05);
  }
 
  .auth-status {
-   font-size: 12px;
-   font-weight: 600;
-   color: #555;
+ font-size: 12px;
+ font-weight: 600;
+ color: #555;
  }
 
  h1 {
-   font-size: 18px;
-   font-weight: 800;
-   letter-spacing: 0.06em;
-   text-transform: uppercase;
-   color: #111;
-   margin-bottom: 3px;
+ font-size: 18px;
+ font-weight: 800;
+ letter-spacing: 0.06em;
+ text-transform: uppercase;
+ color: #111;
+ margin-bottom: 3px;
  }
 
  .subtitle {
-   font-size: 12px;
-   color: #555;
-   letter-spacing: 0.04em;
-   text-transform: uppercase;
-   margin-bottom: 16px;
-   font-weight: 600;
+ font-size: 12px;
+ color: #555;
+ letter-spacing: 0.04em;
+ text-transform: uppercase;
+ margin-bottom: 16px;
+ font-weight: 600;
  }
 
  .progress-bar-wrap {
-   height: 5px;
-   background: #ddd;
-   margin-bottom: 18px;
-   border-radius: 3px;
-   overflow: hidden;
+ height: 5px;
+ background: #ddd;
+ margin-bottom: 18px;
+ border-radius: 3px;
+ overflow: hidden;
  }
 
  .progress-bar {
-   height: 100%;
-   background: #1a7f3c;
-   border-radius: 3px;
-   transition: width 0.3s;
-   width: 0%;
+ height: 100%;
+ background: #1a7f3c;
+ border-radius: 3px;
+ transition: width 0.3s;
+ width: 0%;
  }
 
  .day-block {
-   margin-bottom: 16px;
-   border: 1.5px solid #ddd;
-   border-radius: 10px;
-   overflow: hidden;
-   background: #fff;
-   box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+ margin-bottom: 16px;
+ border: 1.5px solid #ddd;
+ border-radius: 10px;
+ overflow: hidden;
+ background: #fff;
+ box-shadow: 0 1px 4px rgba(0,0,0,0.07);
  }
 
  .day-header {
-   background: #1c1c1e;
-   padding: 11px 14px;
-   display: flex;
-   align-items: center;
-   gap: 10px;
-   cursor: pointer;
-   user-select: none;
+ background: #1c1c1e;
+ padding: 11px 14px;
+ display: flex;
+ align-items: center;
+ gap: 10px;
+ cursor: pointer;
+ user-select: none;
  }
 
  .day-label {
-   font-size: 11px;
-   font-weight: 700;
-   letter-spacing: 0.12em;
-   text-transform: uppercase;
-   color: #aaa;
+ font-size: 11px;
+ font-weight: 700;
+ letter-spacing: 0.12em;
+ text-transform: uppercase;
+ color: #aaa;
  }
 
  .day-title {
-   font-size: 13px;
-   font-weight: 700;
-   color: #fff;
-   flex: 1;
+ font-size: 13px;
+ font-weight: 700;
+ color: #fff;
+ flex: 1;
  }
 
  .chevron {
-   font-size: 10px;
-   color: #888;
-   transition: transform 0.2s;
+ font-size: 10px;
+ color: #888;
+ transition: transform 0.2s;
  }
 
  .day-header.collapsed .chevron { transform: rotate(-90deg); }
@@ -156,84 +161,84 @@
  .day-content.hidden { display: none; }
 
  table {
-   width: 100%;
-   border-collapse: collapse;
+ width: 100%;
+ border-collapse: collapse;
  }
 
  thead tr {
-   background: #f7f7f7;
-   border-bottom: 1.5px solid #e0e0e0;
+ background: #f7f7f7;
+ border-bottom: 1.5px solid #e0e0e0;
  }
 
  thead th {
-   padding: 7px 10px;
-   font-size: 11px;
-   font-weight: 700;
-   letter-spacing: 0.07em;
-   text-transform: uppercase;
-   color: #666;
-   text-align: left;
+ padding: 7px 10px;
+ font-size: 11px;
+ font-weight: 700;
+ letter-spacing: 0.07em;
+ text-transform: uppercase;
+ color: #666;
+ text-align: left;
  }
 
  thead th.center { text-align: center; }
 
  tbody tr {
-   border-bottom: 1px solid #ebebeb;
-   transition: background 0.12s;
+ border-bottom: 1px solid #ebebeb;
+ transition: background 0.12s;
  }
 
  tbody tr:last-child { border-bottom: none; }
  tbody tr:hover { background: #f9f9f9; }
 
  td {
-   padding: 10px 10px;
-   vertical-align: middle;
+ padding: 10px 10px;
+ vertical-align: middle;
  }
 
  .intensity { font-size: 18px; line-height: 1; }
 
  .exercise-name {
-   font-size: 14px;
-   font-weight: 700;
-   color: #111;
+ font-size: 14px;
+ font-weight: 700;
+ color: #111;
  }
 
  .exercise-note {
-   font-size: 11px;
-   color: #777;
-   margin-top: 2px;
-   line-height: 1.4;
-   font-weight: 500;
+ font-size: 11px;
+ color: #777;
+ margin-top: 2px;
+ line-height: 1.4;
+ font-weight: 500;
  }
 
  .sets-reps {
-   font-size: 13px;
-   font-weight: 700;
-   color: #222;
-   white-space: nowrap;
-   text-align: center;
+ font-size: 13px;
+ font-weight: 700;
+ color: #222;
+ white-space: nowrap;
+ text-align: center;
  }
 
  .weight-cell { text-align: center; }
 
  .weight-input {
-   background: #f0f0f0;
-   border: 1.5px solid #ccc;
-   border-radius: 6px;
-   color: #111;
-   font-size: 13px;
-   font-weight: 700;
-   width: 82px;
-   padding: 6px 6px;
-   text-align: center;
-   outline: none;
-   transition: border-color 0.15s, background 0.15s;
-   -webkit-appearance: none;
+ background: #f0f0f0;
+ border: 1.5px solid #ccc;
+ border-radius: 6px;
+ color: #111;
+ font-size: 13px;
+ font-weight: 700;
+ width: 82px;
+ padding: 6px 6px;
+ text-align: center;
+ outline: none;
+ transition: border-color 0.15s, background 0.15s;
+ -webkit-appearance: none;
  }
 
  .weight-input:focus {
-   border-color: #1a7f3c;
-   background: #fff;
+ border-color: #1a7f3c;
+ background: #fff;
  }
 
  .weight-input::placeholder { color: #aaa; font-weight: 400; font-size: 11px; }
@@ -241,64 +246,64 @@
  .sets-cell { text-align: center; }
 
  .set-dots {
-   display: flex;
-   flex-direction: column;
-   gap: 5px;
-   align-items: center;
+ display: flex;
+ flex-direction: column;
+ gap: 5px;
+ align-items: center;
  }
 
  .set-dot {
-   width: 26px;
-   height: 26px;
-   border-radius: 50%;
-   border: 2px solid #ccc;
-   background: #fff;
-   cursor: pointer;
-   font-size: 13px;
-   font-weight: 700;
-   display: inline-flex;
-   align-items: center;
-   justify-content: center;
-   color: transparent;
-   transition: all 0.15s;
-   flex-shrink: 0;
+ width: 26px;
+ height: 26px;
+ border-radius: 50%;
+ border: 2px solid #ccc;
+ background: #fff;
+ cursor: pointer;
+ font-size: 13px;
+ font-weight: 700;
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ color: transparent;
+ transition: all 0.15s;
+ flex-shrink: 0;
  }
 
  .set-dot.checked {
-   background: #1a7f3c;
-   border-color: #1a7f3c;
-   color: #fff;
+ background: #1a7f3c;
+ border-color: #1a7f3c;
+ color: #fff;
  }
 
  .rest-row td {
-   padding: 16px 10px;
-   text-align: center;
-   font-size: 12px;
-   font-weight: 700;
-   letter-spacing: 0.1em;
-   text-transform: uppercase;
-   color: #aaa;
-   background: #fafafa;
+ padding: 16px 10px;
+ text-align: center;
+ font-size: 12px;
+ font-weight: 700;
+ letter-spacing: 0.1em;
+ text-transform: uppercase;
+ color: #aaa;
+ background: #fafafa;
  }
 
  .action-bar {
-   margin-top: 20px;
-   display: flex;
-   justify-content: center;
-   gap: 10px;
+ margin-top: 20px;
+ display: flex;
+ justify-content: center;
+ gap: 10px;
  }
 
  .btn {
-   background: #fff;
-   border: 1.5px solid #ccc;
-   color: #444;
-   border-radius: 7px;
-   padding: 9px 16px;
-   font-size: 12px;
-   font-weight: 700;
-   letter-spacing: 0.05em;
-   cursor: pointer;
-   transition: all 0.15s;
+ background: #fff;
+ border: 1.5px solid #ccc;
+ color: #444;
+ border-radius: 7px;
+ padding: 9px 16px;
+ font-size: 12px;
+ font-weight: 700;
+ letter-spacing: 0.05em;
+ cursor: pointer;
+ transition: all 0.15s;
  }
 
  .btn:hover { border-color: #888; color: #111; }
@@ -309,17 +314,17 @@
 <body>
 
 <div class="brand-header">
-  <div class="brand-title">GymBuddy 🏋️</div>
+ <div class="brand-title">GymBuddy 🏋️</div>
 </div>
 
 <div class="user-greeting" id="greetingBar">
-  <span id="greetingText">Hello! Have a good day at the gym today buddy!.</span>
-  <button class="edit-name-btn" onclick="promptUserName()">Edit Name</button>
+ <span id="greetingText">Hello! Have a good day at the gym today buddy!.</span>
+ <button class="edit-name-btn" onclick="promptUserName()">Edit Name</button>
 </div>
 
 <div class="auth-bar">
-  <span class="auth-status" id="authStatus">Drive: Disconnected</span>
-  <button class="btn btn-primary" id="authBtn" onclick="handleAuth()">Sign in with Google</button>
+ <span class="auth-status" id="authStatus">Drive: Disconnected</span>
+ <button class="btn btn-primary" id="authBtn" onclick="handleAuth()">Sign in with Google</button>
 </div>
 
 <h1>High-Volume Upper-Chest &amp; Frame</h1>
@@ -393,113 +398,113 @@ const days = [
 ];
 
 let state = {
-  userName: '',
-  sets: {},
-  currentWeights: {},
-  exerciseHistory: {} 
+ userName: '',
+ sets: {},
+ currentWeights: {},
+ exerciseHistory: {} 
 };
 
 let accessToken = null;
 let driveFileId = null;
 
 function saveLocalState() {
-  try { localStorage.setItem('gymbuddy_state', JSON.stringify(state)); } catch(e) {}
+ try { localStorage.setItem('gymbuddy_state', JSON.stringify(state)); } catch(e) {}
 }
 
 function loadLocalState() {
-  try {
-    const s = localStorage.getItem('gymbuddy_state');
-    if (s) state = JSON.parse(s);
-  } catch(e) {}
+ try {
+ const s = localStorage.getItem('gymbuddy_state');
+ if (s) state = JSON.parse(s);
+ } catch(e) {}
 }
 
 function updateGreeting() {
-  const greetingEl = document.getElementById('greetingText');
-  if (state.userName && state.userName.trim() !== '') {
-    greetingEl.textContent = `Hello ${state.userName}. Have a good day at the gym today buddy.`;
-  } else {
-    greetingEl.textContent = `Hello! Have a good day at the gym today buddy.`;
-  }
+ const greetingEl = document.getElementById('greetingText');
+ if (state.userName && state.userName.trim() !== '') {
+ greetingEl.textContent = `Hello ${state.userName}. Have a good day at the gym today buddy.`;
+ } else {
+ greetingEl.textContent = `Hello! Have a good day at the gym today buddy.`;
+ }
 }
 
 function promptUserName() {
-  const name = prompt("What's your name?", state.userName || '');
-  if (name !== null) {
-    state.userName = name.trim();
-    saveLocalState();
-    saveToDrive();
-    updateGreeting();
-  }
+ const name = prompt("What's your name?", state.userName || '');
+ if (name !== null) {
+ state.userName = name.trim();
+ saveLocalState();
+ saveToDrive();
+ updateGreeting();
+ }
 }
 
 function checkUserFirstLaunch() {
-  if (!state.userName) {
-    setTimeout(() => {
-      promptUserName();
-    }, 500);
-  }
+ if (!state.userName) {
+ setTimeout(() => {
+ promptUserName();
+ }, 500);
+ }
 }
 
 // Google Auth & Drive Sync
 function handleAuth() {
-  const tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: 'https://www.googleapis.com/auth/drive.appdata',
-    callback: async (response) => {
-      if (response.access_token) {
-        accessToken = response.access_token;
-        document.getElementById('authStatus').textContent = 'Drive: Connected';
-        document.getElementById('authBtn').style.display = 'none';
-        await syncFromDrive();
-      }
-    },
-  });
-  tokenClient.requestAccessToken();
+ const tokenClient = google.accounts.oauth2.initTokenClient({
+ client_id: CLIENT_ID,
+ scope: 'https://www.googleapis.com/auth/drive.appdata',
+ callback: async (response) => {
+ if (response.access_token) {
+ accessToken = response.access_token;
+ document.getElementById('authStatus').textContent = 'Drive: Connected';
+ document.getElementById('authBtn').style.display = 'none';
+ await syncFromDrive();
+ }
+ },
+ });
+ tokenClient.requestAccessToken();
 }
 
 async function syncFromDrive() {
-  if (!accessToken) return;
-  try {
-    const res = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder', {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
-    const data = await res.json();
-    const file = data.files.find(f => f.name === 'gymbuddy_data.json');
+ if (!accessToken) return;
+ try {
+ const res = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder', {
+ headers: { Authorization: `Bearer ${accessToken}` }
+ });
+ const data = await res.json();
+ const file = data.files.find(f => f.name === 'gymbuddy_data.json');
 
-    if (file) {
-      driveFileId = file.id;
-      const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      const driveState = await fileRes.json();
-      state = { ...state, ...driveState };
-      saveLocalState();
-      updateGreeting();
-      renderWorkout();
-    } else {
-      await saveToDrive();
-    }
-  } catch(e) { console.error('Drive Sync Error', e); }
+ if (file) {
+ driveFileId = file.id;
+ const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
+ headers: { Authorization: `Bearer ${accessToken}` }
+ });
+ const driveState = await fileRes.json();
+ state = { ...state, ...driveState };
+ saveLocalState();
+ updateGreeting();
+ renderWorkout();
+ } else {
+ await saveToDrive();
+ }
+ } catch(e) { console.error('Drive Sync Error', e); }
 }
 
 async function saveToDrive() {
-  if (!accessToken) return;
-  const metadata = { name: 'gymbuddy_data.json', parents: ['appDataFolder'] };
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-  form.append('file', new Blob([JSON.stringify(state)], { type: 'application/json' }));
+ if (!accessToken) return;
+ const metadata = { name: 'gymbuddy_data.json', parents: ['appDataFolder'] };
+ const form = new FormData();
+ form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+ form.append('file', new Blob([JSON.stringify(state)], { type: 'application/json' }));
 
-  let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-  let method = 'POST';
+ let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+ let method = 'POST';
 
-  if (driveFileId) {
-    url = `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=multipart`;
-    method = 'PATCH';
-  }
+ if (driveFileId) {
+ url = `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=multipart`;
+ method = 'PATCH';
+ }
 
-  const res = await fetch(url, { method, headers: { Authorization: `Bearer ${accessToken}` }, body: form });
-  const data = await res.json();
-  if (data.id) driveFileId = data.id;
+ const res = await fetch(url, { method, headers: { Authorization: `Bearer ${accessToken}` }, body: form });
+ const data = await res.json();
+ if (data.id) driveFileId = data.id;
 }
 
 function updateProgress() {
@@ -522,43 +527,43 @@ function saveWeight(exName, wKey, val) {
  state.currentWeights[wKey] = val;
  const today = new Date().toISOString().split('T')[0];
  
- if (val.trim() !== '') {
-   state.exerciseHistory[exName] = {
-     weight: val,
-     updatedAt: today
-   };
+if (val.trim() !== '') {
+ state.exerciseHistory[exName] = {
+ weight: val,
+ updatedAt: today
+ };
  }
  saveLocalState();
  saveToDrive();
 }
 
 function exportToCSV() {
-  const historyKeys = Object.keys(state.exerciseHistory);
-  if (historyKeys.length === 0) {
-    alert("No logged exercise history found to export.");
-    return;
-  }
+ const historyKeys = Object.keys(state.exerciseHistory);
+ if (historyKeys.length === 0) {
+ alert("No logged exercise history found to export.");
+ return;
+ }
 
-  let csvContent = "data:text/csv;charset=utf-8,Exercise Name,Last Weight Used,Last Updated Date\n";
+ let csvContent = "data:text/csv;charset=utf-8,Exercise Name,Last Weight Used,Last Updated Date\n";
 
-  historyKeys.forEach((exName) => {
-    const entry = state.exerciseHistory[exName];
-    const weight = typeof entry === 'object' ? entry.weight : entry;
-    const date = typeof entry === 'object' && entry.updatedAt ? entry.updatedAt : 'N/A';
-    
-    const cleanName = `"${exName.replace(/"/g, '""')}"`;
-    const cleanWeight = `"${weight.replace(/"/g, '""')}"`;
-    
-    csvContent += `${cleanName},${cleanWeight},${date}\n`;
-  });
+ historyKeys.forEach((exName) => {
+ const entry = state.exerciseHistory[exName];
+ const weight = typeof entry === 'object' ? entry.weight : entry;
+ const date = typeof entry === 'object' && entry.updatedAt ? entry.updatedAt : 'N/A';
+ 
+const cleanName = `"${exName.replace(/"/g, '""')}"`;
+ const cleanWeight = `"${weight.replace(/"/g, '""')}"`;
+ 
+csvContent += `${cleanName},${cleanWeight},${date}\n`;
+ });
 
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `gymbuddy_history_${new Date().toISOString().split('T')[0]}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+ const encodedUri = encodeURI(csvContent);
+ const link = document.createElement("a");
+ link.setAttribute("href", encodedUri);
+ link.setAttribute("download", `gymbuddy_history_${new Date().toISOString().split('T')[0]}.csv`);
+ document.body.appendChild(link);
+ link.click();
+ document.body.removeChild(link);
 }
 
 function resetAll() {
@@ -577,104 +582,129 @@ function renderWorkout() {
  wrap.innerHTML = '';
 
  days.forEach((day, di) => {
-   const block = document.createElement('div');
-   block.className = 'day-block';
+ const block = document.createElement('div');
+ block.className = 'day-block';
 
-   const header = document.createElement('div');
-   header.className = 'day-header';
-   header.innerHTML = `<span class="day-label">${day.label}</span><span class="day-title">${day.title}</span><span class="chevron">▼</span>`;
-   header.onclick = () => {
-     const content = block.querySelector('.day-content');
-     const collapsed = content.classList.toggle('hidden');
-     header.classList.toggle('collapsed', collapsed);
-   };
-   block.appendChild(header);
+ const header = document.createElement('div');
+ header.className = 'day-header';
+ header.innerHTML = `<span class="day-label">${day.label}</span><span class="day-title">${day.title}</span><span class="chevron">▼</span>`;
+ header.onclick = () => {
+ const content = block.querySelector('.day-content');
+ const collapsed = content.classList.toggle('hidden');
+ header.classList.toggle('collapsed', collapsed);
+ };
+ block.appendChild(header);
 
-   const content = document.createElement('div');
-   content.className = 'day-content';
+ const content = document.createElement('div');
+ content.className = 'day-content';
 
-   if (day.rest) {
-     const table = document.createElement('table');
-     table.innerHTML = `<tbody><tr class="rest-row"><td colspan="5">Rest & Recover</td></tr></tbody>`;
-     content.appendChild(table);
-   } else {
-     const table = document.createElement('table');
-     table.innerHTML = `
-     <thead>
-       <tr>
-         <th style="width:30px"></th>
-         <th>Exercise</th>
-         <th class="center">Reps</th>
-         <th class="center">kg / lbs</th>
-         <th class="center">Sets</th>
-       </tr>
-     </thead>
-     <tbody id="tbody-${di}"></tbody>
-     `;
-     content.appendChild(table);
+ if (day.rest) {
+ const table = document.createElement('table');
+ table.innerHTML = `<tbody><tr class="rest-row"><td colspan="5">Rest & Recover</td></tr></tbody>`;
+ content.appendChild(table);
+ } else {
+ const table = document.createElement('table');
+ table.innerHTML = `
+ <thead>
+ <tr>
+ <th style="width:30px"></th>
+ <th>Exercise</th>
+ <th class="center">Reps</th>
+ <th class="center">kg / lbs</th>
+ <th class="center">Sets</th>
+ </tr>
+ </thead>
+ <tbody id="tbody-${di}"></tbody>
+ `;
+ content.appendChild(table);
 
-     const tbody = table.querySelector(`#tbody-${di}`);
-     day.exercises.forEach((ex, ei) => {
-       const wKey = `w-${di}-${ei}`;
-       
-       const histEntry = state.exerciseHistory[ex.name];
-       const lastWeight = typeof histEntry === 'object' ? histEntry.weight : (histEntry || '');
-       const currentWeight = state.currentWeights[wKey] !== undefined ? state.currentWeights[wKey] : lastWeight;
+ const tbody = table.querySelector(`#tbody-${di}`);
+ day.exercises.forEach((ex, ei) => {
+ const wKey = `w-${di}-${ei}`;
+ 
+const histEntry = state.exerciseHistory[ex.name];
+ const lastWeight = typeof histEntry === 'object' ? histEntry.weight : (histEntry || '');
+ const currentWeight = state.currentWeights[wKey] !== undefined ? state.currentWeights[wKey] : lastWeight;
 
-       let dotsHtml = '<div class="set-dots">';
-       for (let s = 0; s < ex.sets; s++) {
-         const sKey = `s-${di}-${ei}-${s}`;
-         const done = state.sets[sKey] || false;
-         dotsHtml += `<button class="set-dot ${done ? 'checked' : ''}" onclick="toggleSet('${sKey}', this)">${done ? '✓' : ''}</button>`;
-       }
-       dotsHtml += '</div>';
+ let dotsHtml = '<div class="set-dots">';
+ for (let s = 0; s < ex.sets; s++) {
+ const sKey = `s-${di}-${ei}-${s}`;
+ const done = state.sets[sKey] || false;
+ dotsHtml += `<button class="set-dot ${done ? 'checked' : ''}" onclick="toggleSet('${sKey}', this)">${done ? '✓' : ''}</button>`;
+ }
+ dotsHtml += '</div>';
 
-       const tr = document.createElement('tr');
+ const tr = document.createElement('tr');
 
-       const tdDot = document.createElement('td');
-       tdDot.className = 'intensity';
-       tdDot.textContent = ex.intensity;
+ const tdDot = document.createElement('td');
+ tdDot.className = 'intensity';
+ tdDot.textContent = ex.intensity;
 
-       const tdEx = document.createElement('td');
-       tdEx.innerHTML = `<div class="exercise-name">${ex.name}</div>${ex.note ? `<div class="exercise-note">${ex.note}</div>` : ''}`;
+ const tdEx = document.createElement('td');
+ tdEx.innerHTML = `<div class="exercise-name">${ex.name}</div>${ex.note ? `<div class="exercise-note">${ex.note}</div>` : ''}`;
 
-       const tdReps = document.createElement('td');
-       tdReps.className = 'sets-reps';
-       tdReps.textContent = ex.reps;
+ const tdReps = document.createElement('td');
+ tdReps.className = 'sets-reps';
+ tdReps.textContent = ex.reps;
 
-       const inp = document.createElement('input');
-       inp.className = 'weight-input';
-       inp.type = 'text';
-       inp.placeholder = lastWeight ? `Last: ${lastWeight}` : 'e.g. 20/40';
-       inp.value = currentWeight;
-       inp.addEventListener('change', () => saveWeight(ex.name, wKey, inp.value));
+ const inp = document.createElement('input');
+ inp.className = 'weight-input';
+ inp.type = 'text';
+ inp.placeholder = lastWeight ? `Last: ${lastWeight}` : 'e.g. 20/40';
+ inp.value = currentWeight;
+ inp.addEventListener('change', () => saveWeight(ex.name, wKey, inp.value));
 
-       const tdW = document.createElement('td');
-       tdW.className = 'weight-cell';
-       tdW.appendChild(inp);
+ const tdW = document.createElement('td');
+ tdW.className = 'weight-cell';
+ tdW.appendChild(inp);
 
-       const tdSets = document.createElement('td');
-       tdSets.className = 'sets-cell';
-       tdSets.innerHTML = dotsHtml;
+ const tdSets = document.createElement('td');
+ tdSets.className = 'sets-cell';
+ tdSets.innerHTML = dotsHtml;
 
-       tr.appendChild(tdDot);
-       tr.appendChild(tdEx);
-       tr.appendChild(tdReps);
-       tr.appendChild(tdW);
-       tr.appendChild(tdSets);
-       tbody.appendChild(tr);
-     });
-   }
+ tr.appendChild(tdDot);
+ tr.appendChild(tdEx);
+ tr.appendChild(tdReps);
+ tr.appendChild(tdW);
+ tr.appendChild(tdSets);
+ tbody.appendChild(tr);
+ });
+ }
 
-   block.appendChild(content);
-   wrap.appendChild(block);
+ block.appendChild(content);
+ wrap.appendChild(block);
  });
 
  updateProgress();
  checkUserFirstLaunch();
 }
 
-renderWorkout();
+function autoSignIn() {
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/drive.appdata',
+      prompt: '', 
+      callback: async (response) => {
+        if (response.access_token) {
+          accessToken = response.access_token;
+          document.getElementById('authStatus').textContent = 'Drive: Connected';
+          document.getElementById('authBtn').style.display = 'none';
+          await syncFromDrive();
+        }
+      },
+    });
+    
+    tokenClient.requestAccessToken({ prompt: 'none' });
+  }
+}
+
+// Automatically load workout and attempt silent sign-in on page load
+window.addEventListener('load', () => {
+  renderWorkout();
+  setTimeout(autoSignIn, 500);
+});
 </script>
 </body>
 </html>
+
