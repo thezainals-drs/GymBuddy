@@ -104,6 +104,31 @@
    font-size: 12px;
  }
 
+ .toast {
+   position: fixed;
+   left: 16px;
+   right: 16px;
+   bottom: 24px;
+   background: #1a7f3c;
+   color: #fff;
+   padding: 14px 18px;
+   border-radius: 10px;
+   font-size: 13px;
+   font-weight: 700;
+   text-align: center;
+   box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+   opacity: 0;
+   transform: translateY(12px);
+   pointer-events: none;
+   transition: opacity 0.25s, transform 0.25s;
+   z-index: 999;
+ }
+
+ .toast.visible {
+   opacity: 1;
+   transform: translateY(0);
+ }
+
  h1 {
    font-size: 18px;
    font-weight: 800;
@@ -407,6 +432,8 @@
   <button class="btn" onclick="resetAll()">Reset Session</button>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
 const CLIENT_ID = '845411227594-7vf5h7g7pjcn0rm12art72jr0st5vpjg.apps.googleusercontent.com';
 
@@ -496,8 +523,18 @@ function saveLocalState() {
 function loadLocalState() {
   try {
     const s = localStorage.getItem('gymbuddy_state');
-    if (s) state = JSON.parse(s);
-  } catch(e) {}
+    if (s) {
+      const saved = JSON.parse(s);
+      // Merge onto the defaults rather than replacing outright — this guarantees
+      // fields added in newer versions of the app (like workoutLogs) always exist,
+      // even when loading data saved by an older version of this file.
+      state = { ...state, ...saved };
+      if (!Array.isArray(state.workoutLogs)) state.workoutLogs = [];
+      if (!state.sets) state.sets = {};
+      if (!state.currentWeights) state.currentWeights = {};
+      if (!state.exerciseHistory) state.exerciseHistory = {};
+    }
+  } catch(e) { console.error('Failed to load saved state', e); }
 }
 
 function updateGreeting() {
@@ -605,6 +642,19 @@ async function saveToDrive() {
     console.error('Drive Save Error — will retry next time we\'re online', e);
     // Leave pendingSync true so we retry on the next connectivity change.
   }
+}
+
+// ---- Toast notification (non-blocking, visible confirmation) ----
+let toastTimer = null;
+function showToast(message) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.add('visible');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.classList.remove('visible');
+  }, 2800);
 }
 
 // ---- Sync status UI ----
@@ -741,7 +791,7 @@ function logWorkout(di) {
 
   touchState();
   renderWorkout();
-  alert(`${day.label} logged for ${today}. Nice work!`);
+  showToast(`✓ ${day.label} logged for ${today}`);
 }
 
 // Exports every logged workout session (one row per exercise per session),
